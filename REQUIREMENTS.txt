@@ -1,0 +1,5 @@
+Features a serem adicionadas
+
+* Preset de palavras e salvar listas
+* Batch de upload de artes definindo quantas cartelas por arte
+* Ajustar as margens de impressão pra caber 6 em uma folha e cada uma 9x9

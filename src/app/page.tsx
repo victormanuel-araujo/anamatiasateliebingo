@@ -1,101 +1,273 @@
-import Image from "next/image";
+"use client";
+
+import { LabeledInput } from "@/components/labeled-input";
+import { WordsList } from "@/components/words-list";
+import { WordsListDrawer } from "@/components/words-list-drawer";
+import { bootLocalStorage } from "@/config/words-lists";
+import { Delete } from "@mui/icons-material";
+import {
+  Typography,
+  Box,
+  Divider,
+  List,
+  Button,
+  ListItem,
+  ListItemText,
+  IconButton,
+} from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+  const printArtsLookup = useRef<Record<number, Record<string, boolean>>>({});
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [wordsList, setWordsList] = useState<string[]>([]);
+
+  const [amountToGenerate, setAmountToGenerate] = useState(1);
+  const [fileToGenerate, setFileToGenerate] = useState<File | null>(null);
+  const [artsToGenerateList, setArtsToGenerateList] = useState<
+    { file: File; amount: number }[]
+  >([]);
+
+  const clearForm = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.files = null;
+    }
+    setFileToGenerate(null);
+    setAmountToGenerate(1);
+  };
+
+  const generateTextsToAddOnArt = useCallback(
+    (artIndex: number) => {
+      const wordsArray = [];
+      const usedIndexLookup: Record<number, boolean> = {};
+
+      for (let i = 0; i < 11; i++) {
+        if (i === 5) wordsArray.push("");
+
+        let iteration = 0;
+        let randomIndex;
+        do {
+          iteration++;
+          randomIndex = Math.floor(Math.random() * wordsList.length);
+        } while (usedIndexLookup[randomIndex] && iteration < wordsList.length);
+
+        usedIndexLookup[randomIndex] = true;
+        wordsArray.push(wordsList[randomIndex]);
+      }
+
+      const sortedList = [...wordsArray].sort();
+      if (printArtsLookup.current[artIndex]?.[sortedList.sort().join(",")])
+        return generateTextsToAddOnArt(artIndex);
+
+      if (!printArtsLookup.current[artIndex])
+        printArtsLookup.current[artIndex] = {};
+      printArtsLookup.current[artIndex][sortedList.sort().join(",")] = true;
+
+      return wordsArray;
+    },
+    [wordsList]
+  );
+
+  const addArtAndAmountToList = () => {
+    if (!fileToGenerate || amountToGenerate === 0) return;
+    setArtsToGenerateList((prev) => [
+      ...prev,
+      { amount: amountToGenerate, file: fileToGenerate as File },
+    ]);
+    clearForm();
+  };
+
+  const changeWordsList = (wordsList: string[]) => {
+    setWordsList(wordsList);
+    setIsDrawerOpen(false);
+  };
+
+  const removeItemFromList = (index: number) => {
+    setArtsToGenerateList((prev) => {
+      return prev.filter((_, filterIndex) => filterIndex !== index);
+    });
+  };
+
+  useEffect(() => {
+    bootLocalStorage();
+  }, []);
+
+  return (
+    <div>
+      <main
+        style={{ width: "100vw", height: "100vh", padding: "32px 24px" }}
+        className="prevent-print"
+      >
+        <Box width="100%">
+          <Typography component="h1" fontSize={32} fontWeight={500}>
+            Gerador de bingos
+          </Typography>
+          <Divider />
+
+          <Box display="flex" flexDirection="row" columnGap="24px" mt="16px">
+            <Box
+              display="flex"
+              flexDirection="column"
+              mt="24px"
+              rowGap="16px"
+              flex={1}
+            >
+              <LabeledInput
+                type="file"
+                inputRef={fileInputRef}
+                title="Selecione a arte para as cartelas:"
+                onChange={(ev) =>
+                  setFileToGenerate(
+                    (ev.target as HTMLInputElement)?.files?.[0] || null
+                  )
+                }
+              />
+
+              <LabeledInput
+                title="Quantas cartelas devem ser geradas para essa arte:"
+                value={amountToGenerate}
+                onChange={(ev) =>
+                  setAmountToGenerate(
+                    Number((ev.target.value || "").replace(/\D/g, ""))
+                  )
+                }
+                type="text"
+              />
+
+              <Box
+                display="flex"
+                columnGap="16px"
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="flex-end"
+              >
+                <Button variant="contained" onClick={addArtAndAmountToList}>
+                  Adicionar
+                </Button>
+
+                <Button onClick={clearForm}>Limpar</Button>
+              </Box>
+
+              <Divider />
+
+              <List>
+                {artsToGenerateList.map(({ amount, file }, index) => (
+                  <ListItem
+                    secondaryAction={
+                      <IconButton
+                        aria-label="comment"
+                        onClick={() => removeItemFromList(index)}
+                      >
+                        <Delete />
+                      </IconButton>
+                    }
+                    disableGutters
+                    key={index}
+                  >
+                    <ListItemText
+                      primary={`Aquivo: ${file.name}, quantidade: ${amount}`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+
+            <Divider orientation="vertical" flexItem />
+
+            <Box flex={1}>
+              <Typography>Lista de palavras para o bingo</Typography>
+
+              <Box height={250} maxHeight={250} overflow="scroll" mt="16px">
+                {wordsList.length ? (
+                  <WordsList words={wordsList} />
+                ) : (
+                  <Box
+                    width="100%"
+                    height="100%"
+                    alignItems="center"
+                    justifyContent="center"
+                    display="flex"
+                  >
+                    <Typography color="grey">
+                      Nenhuma lista selecionada
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Button variant="contained" onClick={() => setIsDrawerOpen(true)}>
+                Alterar lista
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+
+        <WordsListDrawer
+          open={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          selectList={changeWordsList}
+        />
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+      <div className="print-generated-arts">
+        <Box
+          width="100vw"
+          display="flex"
+          flexWrap="wrap"
+          columnGap="2px"
+          rowGap="11px"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {artsToGenerateList.map(({ amount, file }, artIndex) =>
+            Array(amount)
+              .fill(0)
+              .map((_, index) => (
+                <Box
+                  key={index}
+                  position="relative"
+                  width="calc(50vw - 2px)"
+                  height="calc(50vw - 2px)"
+                >
+                  <img alt="" src={URL.createObjectURL(file)} />
+
+                  <Box
+                    position="absolute"
+                    width="80%"
+                    height="49.5%"
+                    bottom="14%"
+                    left="9.5%"
+                    display="flex"
+                    flexDirection="row"
+                    flexWrap="wrap"
+                    justifyContent="space-between"
+                    rowGap="5.5%"
+                  >
+                    {generateTextsToAddOnArt(artIndex).map((value, index) => (
+                      <Box
+                        key={index}
+                        width="calc(25% - 2px)"
+                        height="calc(33% - 8px)"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <span
+                          className={`print-text-inside-ballon ${
+                            value.length >= 22 ? "small" : ""
+                          }`}
+                        >
+                          {value}
+                        </span>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              ))
+          )}
+        </Box>
+      </div>
     </div>
   );
 }

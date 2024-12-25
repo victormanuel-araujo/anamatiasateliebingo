@@ -2,20 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* @import url('https://fonts.googleapis.com/css2?family=Atma:wght@300&display=swap'); */
+
+@font-face {
+  font-family: "Atma";
+  src: url("/atma.woff2") format("woff2");
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.print-text-inside-ballon {
+  text-align: center;
+  font-family: 'Atma', cursive;
+  font-size: min(11px, max(11px, 3vw));
+  word-break: keep-all;
+  text-transform: uppercase;
+  padding: 4px;
+}
+
+.print-text-inside-ballon.small {
+  font-size: 8px;
+}
+
+@media print {
+  
+  * {
+      font-family: 'Atma', cursive !important;
+  }
+
+  .prevent-print {
+    display: none !important;
+  }
+}
+
+@page {
+  size: portrait;
+  margin: 24px;
 }
