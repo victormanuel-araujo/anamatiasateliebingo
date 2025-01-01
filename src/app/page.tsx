@@ -15,7 +15,7 @@ import {
   ListItemText,
   IconButton,
 } from "@mui/material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +93,7 @@ export default function Home() {
     });
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     bootLocalStorage();
   }, []);
 

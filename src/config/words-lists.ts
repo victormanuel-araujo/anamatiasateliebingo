@@ -108,7 +108,7 @@ export function bootLocalStorage() {
 export function getWordsList() {
   if (typeof window === "undefined") return [];
   const wordsListString = window?.localStorage?.getItem(WORDS_LIST_STORAGE_KEY);
-  if (!wordsListString) return [];
+  if (!wordsListString) return DEFAULT_WORDS_LISTS;
 
   return JSON.parse(wordsListString);
 }
