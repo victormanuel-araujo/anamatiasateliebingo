@@ -98,6 +98,7 @@ export interface IWordsList {
 }
 
 export function bootLocalStorage() {
+  if (typeof window === "undefined") return;
   const wordsListString = window?.localStorage?.getItem(WORDS_LIST_STORAGE_KEY);
   if (!!wordsListString) return;
 
@@ -105,6 +106,7 @@ export function bootLocalStorage() {
 }
 
 export function getWordsList() {
+  if (typeof window === "undefined") return [];
   const wordsListString = window?.localStorage?.getItem(WORDS_LIST_STORAGE_KEY);
   if (!wordsListString) return [];
 
@@ -112,6 +114,7 @@ export function getWordsList() {
 }
 
 export function addToWordsList(title: string, words: string[]): IWordsList[] {
+  if (typeof window === "undefined") return [];
   const wordsListString = window?.localStorage?.getItem(WORDS_LIST_STORAGE_KEY);
   if (!wordsListString) return [];
 

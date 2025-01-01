@@ -41,6 +41,8 @@ export default function Home() {
 
   const generateTextsToAddOnArt = useCallback(
     (artIndex: number) => {
+      if (!wordsList || !wordsList.length) return [];
+
       const wordsArray = [];
       const usedIndexLookup: Record<number, boolean> = {};
 
